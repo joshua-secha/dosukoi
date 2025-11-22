@@ -1,0 +1,347 @@
+:root {
+    --bg-color: #f4e4bc;
+    /* Tatami/Sand color */
+    --primary-color: #8b4513;
+    /* Wood/Earth */
+    --accent-color: #d32f2f;
+    /* Red for danger/emphasis */
+    --text-color: #333;
+    --font-family: 'Yuji Syuku', serif;
+}
+
+* {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family);
+    background-color: #222;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#game-container {
+    width: 100%;
+    max-width: 800px;
+    height: 100%;
+    max-height: 600px;
+    background-color: var(--bg-color);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Header */
+#header {
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 10;
+}
+
+#score-board {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+#sound-toggle {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+#end-btn {
+    background: none;
+    border: 2px solid #aaa;
+    padding: 5px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: inherit;
+    color: #666;
+}
+
+#end-btn:hover {
+    background-color: #eee;
+}
+
+/* Dohyo Area */
+#dohyo-area {
+    flex: 2;
+    position: relative;
+    background: radial-gradient(circle, #e6cba5 40%, #d2b48c 70%);
+    overflow: hidden;
+    border-top: 5px solid var(--primary-color);
+    border-bottom: 5px solid var(--primary-color);
+    transition: background 1s ease;
+}
+
+/* Simple Dohyo Circle */
+#dohyo-area::after {
+    content: '';
+    position: absolute;
+    bottom: -20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 70px;
+    border: 10px solid #fff;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.wrestler {
+    position: absolute;
+    bottom: 20%;
+    width: 100px;
+    height: 100px;
+    transition: left 0.5s ease;
+}
+
+.sprite {
+    width: 100%;
+    height: 100%;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+/* Player wrestler */
+#player {
+    left: 10%;
+}
+
+#player .sprite {
+    background-image: url('assets/player.png');
+}
+
+/* Opponent wrestler */
+#opponent {
+    left: 80%;
+}
+
+#opponent .sprite::before {
+    content: '';
+    position: absolute;
+    width: 70px;
+    height: 80px;
+    background: linear-gradient(to bottom,
+            #c9a87c 0%,
+            #c9a87c 60%,
+            #654321 60%,
+            #654321 70%,
+            #c9a87c 70%);
+    background-color: #d4a574;
+    border-radius: 40% 40% 30% 30%;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 2px solid #333;
+}
+
+#opponent .sprite::after {
+    content: '😤';
+    position: absolute;
+    font-size: 35px;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+}
+
+/* Boss Mode Styling */
+.boss-sprite {
+    background-size: contain !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+}
+
+.boss-sprite::before,
+.boss-sprite::after {
+    display: none !important;
+}
+
+.boss-mode {
+    background: radial-gradient(circle, #8b0000 40%, #4a0000 70%) !important;
+    animation: bossGlow 2s infinite alternate;
+}
+
+@keyframes bossGlow {
+    0% {
+        filter: brightness(1);
+    }
+
+    100% {
+        filter: brightness(1.2);
+    }
+}
+
+/* Attack animations */
+.attack-right {
+    animation: attackRight 0.3s;
+}
+
+.attack-left {
+    animation: attackLeft 0.3s;
+}
+
+@keyframes attackRight {
+    0% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(10px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+@keyframes attackLeft {
+    0% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(-10px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+/* Question Area */
+#question-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+    padding: 10px;
+}
+
+#question-box {
+    font-size: 3rem;
+    font-weight: bold;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#timer-bar-container {
+    width: 80%;
+    height: 10px;
+    background-color: #ddd;
+    border-radius: 5px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+
+#timer-bar {
+    width: 100%;
+    height: 100%;
+    background-color: var(--accent-color);
+    transform-origin: left;
+    transition: transform 0.1s linear;
+}
+
+/* Answer Area */
+#answer-area {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 10px;
+    padding: 10px;
+    background-color: var(--primary-color);
+}
+
+.ans-btn {
+    background-color: #fff;
+    border: 3px solid #000;
+    font-size: 2rem;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.1s;
+}
+
+.ans-btn:active {
+    background-color: #ccc;
+}
+
+/* Screens */
+.screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#start-screen h1 {
+    font-size: 4rem;
+    margin-bottom: 0;
+    color: var(--primary-color);
+}
+
+#start-btn,
+#restart-btn {
+    font-size: 2rem;
+    padding: 10px 40px;
+    background-color: var(--accent-color);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 20px;
+}
+
+#start-btn:hover,
+#restart-btn:hover {
+    background-color: #b71c1c;
+}
+
+#message-overlay {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px 30px;
+    border-radius: 10px;
+    border: 2px solid var(--primary-color);
+    z-index: 5;
+}
+
+#message-text {
+    margin: 0;
+    color: var(--accent-color);
+}

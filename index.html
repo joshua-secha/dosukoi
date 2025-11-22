@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>どすこい計算ゲーム</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="game-container">
+        <!-- Header / Status Bar -->
+        <div id="header">
+            <div id="score-board">勝ち星: <span id="wins">0</span></div>
+            <div>
+                <button id="sound-toggle" onclick="toggleMute()">🔊</button>
+                <button id="end-btn">おわり</button>
+            </div>
+        </div>
+
+        <!-- Game Area (Dohyo) -->
+        <div id="dohyo-area">
+            <div id="background"></div>
+            <div id="wrestlers">
+                <div id="player" class="wrestler">
+                    <div class="sprite"></div>
+                </div>
+                <div id="opponent" class="wrestler">
+                    <div class="sprite"></div>
+                </div>
+            </div>
+            <div id="message-overlay" class="hidden">
+                <h2 id="message-text"></h2>
+            </div>
+        </div>
+
+        <!-- Question Area -->
+        <div id="question-area">
+            <div id="question-box">
+                <span id="q-num1">?</span>
+                <span id="q-op">+</span>
+                <span id="q-num2">?</span>
+                <span>=</span>
+                <span id="q-ans">?</span>
+            </div>
+            <div id="timer-bar-container">
+                <div id="timer-bar"></div>
+            </div>
+        </div>
+
+        <!-- Answer Buttons -->
+        <div id="answer-area">
+            <button class="ans-btn" data-index="0"></button>
+            <button class="ans-btn" data-index="1"></button>
+            <button class="ans-btn" data-index="2"></button>
+            <button class="ans-btn" data-index="3"></button>
+        </div>
+
+        <!-- Screens -->
+        <div id="start-screen" class="screen">
+            <h1>どすこい計算</h1>
+            <p>横綱目指してがんばろう！</p>
+            <button id="start-btn">はっけよい！</button>
+        </div>
+
+        <div id="result-screen" class="screen hidden">
+            <h2 id="result-title">勝負あり！</h2>
+            <p id="result-rank">番付: 序ノ口</p>
+            <button id="restart-btn">もう一番！</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+
+</html>
