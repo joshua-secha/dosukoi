@@ -139,6 +139,11 @@ function startGame() {
     wrongQuestions = [];
     isBoss = false;
     isAnimating = false;
+    // Reset boss visual state
+    const opponentSprite = opponentElem.querySelector('.sprite');
+    opponentSprite.style.backgroundImage = '';
+    opponentSprite.classList.remove('boss-sprite');
+    document.getElementById('dohyo-area').classList.remove('boss-mode');
 
     updateWrestlerPositions();
     generateQuestion();
