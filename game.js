@@ -139,11 +139,9 @@ function startGame() {
     wrongQuestions = [];
     isBoss = false;
     isAnimating = false;
-    // Reset boss visual state
-    const opponentSprite = opponentElem.querySelector('.sprite');
-    opponentSprite.style.backgroundImage = '';
-    opponentSprite.classList.remove('boss-sprite');
-    document.getElementById('dohyo-area').classList.remove('boss-mode');
+
+    // Reset boss/enemy visual state
+    updateEnemyAppearance();
 
     updateWrestlerPositions();
     generateQuestion();
@@ -177,47 +175,110 @@ function endGame() {
     resultRank.textContent = `あなたの番付: ${rank} (${score}勝)`;
 }
 
+function getDifficultyLevel(currentScore) {
+    if (currentScore < 2) return 1; // 0-1: Easy
+    if (currentScore < 4) return 2; // 2-3: Moderate
+    if (currentScore < 5) return 3; // 4: Harder
+    // Level 4 skipped or merged into pre-boss for faster progression
+    return 5; // 5+: Boss
+}
+
+function updateEnemyAppearance() {
+    const level = getDifficultyLevel(score);
+    const opponentSprite = opponentElem.querySelector('.sprite');
+
+    // Reset classes
+    opponentSprite.className = 'sprite';
+    opponentSprite.style.backgroundImage = '';
+    document.getElementById('dohyo-area').classList.remove('boss-mode');
+
+    // Apply level-based styling
+    if (isBoss) {
+        opponentSprite.classList.add('boss');
+        document.getElementById('dohyo-area').classList.add('boss-mode');
+    } else if (level >= 4) {
+        opponentSprite.classList.add('strong');
+    } else if (level >= 3) {
+        opponentSprite.classList.add('medium');
+    }
+}
+
 // Question Generation
 function generateQuestion() {
     try {
+        const level = getDifficultyLevel(score);
+
         // Check if we should repeat a wrong question
-        // Higher chance if player is in danger (position < 30)
         const dangerMode = playerPosition < 30;
         const repeatChance = dangerMode ? 0.7 : 0.3;
 
         if (wrongQuestions.length > 0 && Math.random() < repeatChance) {
-            currentQuestion = wrongQuestions.pop(); // Take the last wrong question
+            currentQuestion = wrongQuestions.pop();
         } else {
-            // Generate new question with boss difficulty scaling
+            let type, n1, n2, ans;
             const types = ['+', '-', '*', '/'];
-            const type = types[Math.floor(Math.random() * types.length)];
-            let n1, n2, ans;
 
-            // Boss mode increases difficulty
-            const maxNum = isBoss ? 50 : 20;
-            const maxMultiply = isBoss ? 12 : 9;
+            // Determine operation based on level
+            let availableTypes = ['+', '-'];
+            if (level >= 3) availableTypes.push('*');
+            if (level >= 4) availableTypes.push('/');
+
+            // Bias towards tricky questions in higher levels
+            const trickyChance = (level - 1) * 0.2; // Lv1: 0%, Lv2: 20%, Lv3: 40%, Lv4: 60%, Lv5: 80%
+            const isTricky = Math.random() < trickyChance;
+
+            type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+
+            // Boss mode / High level settings
+            const maxNum = isBoss ? 50 : (level * 10 + 10); // Lv1: 20, Lv2: 30...
 
             switch (type) {
                 case '+':
-                    n1 = Math.floor(Math.random() * maxNum) + 1;
-                    n2 = Math.floor(Math.random() * maxNum) + 1;
+                    if (isTricky && level >= 2) {
+                        // Tricky: Sum > 10 or carry over (e.g. 8+5)
+                        n1 = Math.floor(Math.random() * 9) + 2; // 2-10
+                        n2 = Math.floor(Math.random() * 9) + 2;
+                        if (n1 + n2 < 10) n1 += 5; // Ensure it's likely > 10
+                    } else {
+                        n1 = Math.floor(Math.random() * maxNum) + 1;
+                        n2 = Math.floor(Math.random() * maxNum) + 1;
+                    }
                     ans = n1 + n2;
                     break;
                 case '-':
-                    n1 = Math.floor(Math.random() * maxNum) + 1;
-                    n2 = Math.floor(Math.random() * maxNum) + 1;
-                    if (n1 < n2) [n1, n2] = [n2, n1]; // Ensure positive result
+                    if (isTricky && level >= 2) {
+                        // Tricky: Borrowing (e.g. 13-8)
+                        n1 = Math.floor(Math.random() * 15) + 10; // 10-25
+                        n2 = Math.floor(Math.random() * 9) + 2; // 2-10
+                        // Ensure borrowing: unit digit of n1 < n2
+                        if ((n1 % 10) >= n2) n1 -= (n1 % 10) + 1;
+                    } else {
+                        n1 = Math.floor(Math.random() * maxNum) + 1;
+                        n2 = Math.floor(Math.random() * maxNum) + 1;
+                    }
+                    if (n1 < n2) [n1, n2] = [n2, n1];
                     ans = n1 - n2;
                     break;
                 case '*':
-                    n1 = Math.floor(Math.random() * maxMultiply) + 1;
-                    n2 = Math.floor(Math.random() * maxMultiply) + 1;
+                    if (isTricky || level >= 4) {
+                        // Hard tables: 6, 7, 8, 9
+                        const hard = [6, 7, 8, 9];
+                        n1 = hard[Math.floor(Math.random() * hard.length)];
+                        n2 = Math.floor(Math.random() * 9) + 1;
+                    } else {
+                        // Easy tables: 2, 3, 4, 5
+                        const easy = [2, 3, 4, 5];
+                        n1 = easy[Math.floor(Math.random() * easy.length)];
+                        n2 = Math.floor(Math.random() * 9) + 1;
+                    }
                     ans = n1 * n2;
                     break;
                 case '/':
-                    n2 = Math.floor(Math.random() * maxMultiply) + 1;
-                    ans = Math.floor(Math.random() * maxMultiply) + 1;
-                    n1 = n2 * ans; // Ensure clean division
+                    // Inverse of multiplication
+                    const divBase = (level >= 4) ? [6, 7, 8, 9] : [2, 3, 4, 5];
+                    n2 = divBase[Math.floor(Math.random() * divBase.length)];
+                    ans = Math.floor(Math.random() * 9) + 1;
+                    n1 = n2 * ans;
                     break;
             }
             currentQuestion = { n1, n2, type, ans };
@@ -229,7 +290,7 @@ function generateQuestion() {
         qNum2.textContent = currentQuestion.n2;
         qAns.textContent = "?";
 
-        // Generate Answers (1 correct, 3 wrong for 4 total)
+        // Generate Answers
         let answers = [currentQuestion.ans];
         const variance = isBoss ? 20 : 10;
         while (answers.length < 4) {
@@ -238,16 +299,13 @@ function generateQuestion() {
                 answers.push(wrong);
             }
         }
-        // Shuffle answers
         answers.sort(() => Math.random() - 0.5);
 
-        // Update Buttons
         ansBtns.forEach((btn, i) => {
             btn.textContent = answers[i];
             btn.dataset.value = answers[i];
         });
 
-        // Start Timer
         startTimer();
     } catch (e) {
         console.error("Error in generateQuestion:", e);
@@ -293,15 +351,13 @@ function checkAnswer(val) {
 }
 
 function handleCorrectAnswer() {
-    // Adaptive Difficulty: If answered quickly (> 50% time left), reduce maxTime slightly for next
     if (timeLeft > maxTime * 0.5) {
-        maxTime = Math.max(3000, maxTime - 200); // Min 3 sec
+        maxTime = Math.max(3000, maxTime - 200);
     }
 
     consecutiveCorrect++;
     consecutiveWrong = 0;
 
-    // Attack Animation
     isAnimating = true;
     playerElem.classList.add('attack-right');
     playAttackSound();
@@ -310,19 +366,11 @@ function handleCorrectAnswer() {
         playerElem.classList.remove('attack-right');
         isAnimating = false;
 
-        // Move Player Forward based on answer speed
-        let move = 10; // Base movement
-
-        // Speed bonus: faster answers push harder
+        let move = 10;
         const timePercent = timeLeft / maxTime;
-        if (timePercent > 0.8) {
-            move += 5; // Very fast: +5
-        } else if (timePercent > 0.6) {
-            move += 3; // Fast: +3
-        } else if (timePercent > 0.4) {
-            move += 1; // Medium: +1
-        }
-        // Slow answers (< 40% time): no bonus
+        if (timePercent > 0.8) move += 5;
+        else if (timePercent > 0.6) move += 3;
+        else if (timePercent > 0.4) move += 1;
 
         playerPosition += move;
         if (playerPosition > 100) playerPosition = 100;
@@ -334,20 +382,15 @@ function handleCorrectAnswer() {
         } else {
             generateQuestion();
         }
-    }, 300); // Wait for animation
+    }, 300);
 }
 
 function handleWrongAnswer() {
-    // Adaptive Difficulty: Increase maxTime slightly
-    maxTime = Math.min(15000, maxTime + 500); // Max 15 sec
-
+    maxTime = Math.min(15000, maxTime + 500);
     consecutiveCorrect = 0;
     consecutiveWrong++;
-
-    // Add to wrong questions pool
     wrongQuestions.push(currentQuestion);
 
-    // Attack Animation (Opponent)
     isAnimating = true;
     opponentElem.classList.add('attack-left');
     playAttackSound();
@@ -356,7 +399,6 @@ function handleWrongAnswer() {
         opponentElem.classList.remove('attack-left');
         isAnimating = false;
 
-        // Move Player Backward (fixed amount)
         let move = 15;
         playerPosition -= move;
         if (playerPosition < 0) playerPosition = 0;
@@ -368,7 +410,7 @@ function handleWrongAnswer() {
         } else {
             generateQuestion();
         }
-    }, 300); // Wait for animation
+    }, 300);
 }
 
 function showMessage(msg) {
@@ -380,7 +422,6 @@ function showMessage(msg) {
 }
 
 function updateWrestlerPositions() {
-    // Update wrestler positions based on playerPosition (0-100)
     const center = 20 + (playerPosition * 0.6);
     const offset = 15;
     const playerLeft = center - offset;
@@ -393,44 +434,33 @@ function winRound() {
     score++;
     winsDisplay.textContent = score;
     showMessage("白星！");
-    currentState = STATE.RESULT; // Pause briefly
+    currentState = STATE.RESULT;
 
-    // Check if boss was defeated
+    // Update enemy appearance for next round
+    updateEnemyAppearance();
+
     if (isBoss) {
-        // Boss defeated! End game with victory
         setTimeout(() => {
             endGame();
         }, 2000);
-        return; // Exit function to prevent continuing
+        return;
     }
 
-    // Check for Boss Trigger
+    // Check for Boss Trigger (Level 5 starts at 5 wins)
     if (score === 5 && !isBoss) {
         isBoss = true;
 
-        // Switch to boss appearance
         setTimeout(() => {
             showMessage("謎の強敵現る...！");
+            updateEnemyAppearance(); // Will apply boss styling
 
-            // Change opponent to boss image
-            const opponentSprite = opponentElem.querySelector('.sprite');
-            opponentSprite.style.backgroundImage = "url('assets/boss.png')";
-            opponentSprite.classList.add('boss-sprite');
-
-            // Add boss mode styling
-            document.getElementById('dohyo-area').classList.add('boss-mode');
-
-            // Reduce time for boss battles
             maxTime = 8000;
-
-            // Switch to boss BGM
             stopBGM();
             setTimeout(() => playBGM(true), 500);
         }, 1500);
     }
 
     setTimeout(() => {
-        // Reset for next round
         currentState = STATE.PLAYING;
         playerPosition = 50;
         updateWrestlerPositions();
